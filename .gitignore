@@ -1,0 +1,12 @@
+# Niemals Secrets oder Tokens versionieren.
+.env
+__pycache__/
+*.pyc
+
+# macOS-Müll
+.DS_Store
+
+# Falls der Token-Store mal lokal im Projekt landet (Standard ist ~/.garminconnect):
+.garminconnect/
+*.garmin_session
+garmin_tokens.json

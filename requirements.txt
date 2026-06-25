@@ -1,0 +1,16 @@
+# Garmin MCP — Python-Abhängigkeiten
+#
+# Installation (siehe README.md):
+#   pip3 install -r requirements.txt --break-system-packages
+#
+# Versionen sind nach unten gepinnt ("mindestens"), damit wir die APIs
+# bekommen, gegen die dieser Code geschrieben wurde, aber spätere
+# Bugfix-Releases noch erlaubt sind.
+
+# Inoffizielle Garmin-Connect-Client-Library. Macht den Login (inkl. 2FA)
+# und stellt ~130 Methoden für Aktivitäten, Schlaf, HRV, Stress etc. bereit.
+garminconnect>=0.2.38
+
+# Offizielles Anthropic MCP-SDK. Wir nutzen daraus FastMCP
+# (mcp.server.fastmcp), das den JSON-RPC-/stdio-Boilerplate abnimmt.
+mcp>=1.15.0
