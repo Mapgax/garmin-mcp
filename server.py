@@ -209,7 +209,9 @@ def get_activity_detail(activity_id: str) -> dict:
 
     # get_activity_details liefert eine sehr große Struktur. Wir picken die
     # nützliche Zusammenfassung (summaryDTO) heraus statt alles durchzureichen.
-    summary = raw.get("summaryDTO", {})
+    # `or {}` statt Default-Argument: Garmin kann "summaryDTO": null liefern,
+    # und .get(key, default) greift dann NICHT — summary.get(...) würde crashen.
+    summary = raw.get("summaryDTO") or {}
     distance_m = summary.get("distance")
     duration_s = summary.get("duration")
     return {
