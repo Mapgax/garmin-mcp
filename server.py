@@ -444,6 +444,106 @@ def get_training_readiness(date: str | None = None) -> dict:
     }
 
 
+# %LTHR-Schema (Garmins LTHR-verankerte Standardzonen): Anteil der
+# Laktatschwellen-HF, bei dem die jeweilige Zone BEGINNT. Bewusst hier
+# dupliziert statt aus sport_trainer_bot importiert — die beiden Repos sind
+# absichtlich unabhängig (app/hr_zones.py dort nutzt dieselben Werte).
+_LTHR_ZONE_STARTS = {2: 0.80, 3: 0.89, 4: 0.94, 5: 0.99}
+
+
+def _suggest_zones_from_lthr(lthr: int) -> dict[str, str]:
+    """Fünf Zonen aus der Laktatschwellen-HF, fertig formatiert in bpm."""
+    s = {z: round(lthr * f) for z, f in _LTHR_ZONE_STARTS.items()}
+    return {
+        "zone1": f"<{s[2]}",
+        "zone2": f"{s[2]}–{s[3]}",
+        "zone3": f"{s[3]}–{s[4]}",
+        "zone4": f"{s[4]}–{s[5]}",
+        "zone5": f"≥{s[5]}",
+    }
+
+
+@mcp.tool()
+@safe_tool
+def get_lactate_threshold() -> dict:
+    """Laktatschwelle (Laufen): von der Uhr erkannte Schwellen-HF und -Pace,
+    plus daraus abgeleiteter Zonenvorschlag (%LTHR-Schema).
+
+    Hinweis: Zonen lassen sich per API nicht in Garmin schreiben — die
+    vorgeschlagenen Grenzen müssen manuell in Garmin Connect eingetragen
+    werden (Einstellungen → Nutzerprofil → Herzfrequenzbereiche → Laufen).
+    """
+    raw = client.get_lactate_threshold()
+    lt = _g(raw, "speed_and_heart_rate", default={}) or {}
+    lthr = lt.get("heartRate")
+    speed = lt.get("speed")
+    power = _g(raw, "power", default={}) or {}
+
+    if lthr is None:
+        return {
+            "lthr_bpm": None,
+            "note": "Garmin hat noch keine Laktatschwelle erkannt. Dafür braucht "
+                    "es Läufe mit höherer Intensität und gutem HF-Signal "
+                    "(idealerweise Brustgurt).",
+        }
+
+    # Schwellen-Pace aus m/s: Sekunden pro km → 'M:SS /km' (wie _pace_per_km).
+    pace = _pace_per_km(1000.0, 1000.0 / speed) if isinstance(speed, (int, float)) and speed > 0 else None
+    return {
+        "lthr_bpm": lthr,
+        "threshold_pace": pace,
+        "detected_on": lt.get("calendarDate"),
+        "ftp_watts": power.get("functionalThresholdPower"),
+        "suggested_zones_pct_lthr": _suggest_zones_from_lthr(lthr),
+        "transfer": "Nur manuell übertragbar: Garmin Connect → Einstellungen → "
+                    "Nutzerprofil → Herzfrequenz- und Leistungsbereiche → Laufen.",
+    }
+
+
+@mcp.tool()
+@safe_tool
+def get_hr_zones(activity_id: str | None = None) -> dict:
+    """Konfigurierte HF-Zonen + Zeit-in-Zonen einer Aktivität.
+
+    Die Zonengrenzen in der Antwort sind die aktuell im Garmin-Konto
+    konfigurierten (die Zeit-in-Zonen-Daten einer Aktivität sind der einzige
+    Weg, sie per API auszulesen).
+
+    Args:
+        activity_id: Aktivitäts-ID (aus get_recent_activities). Ohne Angabe
+            wird die jüngste Lauf-Aktivität verwendet.
+    """
+    if not activity_id:
+        raw_acts = client.get_activities(0, 20)
+        acts = raw_acts if isinstance(raw_acts, list) else []
+        run = next(
+            (a for a in acts
+             if "running" in str(_g(a, "activityType", "typeKey") or "")),
+            None,
+        ) or (acts[0] if acts else None)
+        if not run:
+            return {"error": "Keine Aktivität gefunden, aus der sich Zonen lesen ließen."}
+        activity_id = run.get("activityId")
+
+    raw = client.get_activity_hr_in_timezones(activity_id)
+    entries = raw if isinstance(raw, list) else _g(raw, "zones", default=[]) or []
+    zones = []
+    for entry in sorted(
+        (e for e in entries if isinstance(e, dict)),
+        key=lambda e: e.get("zoneNumber") or 0,
+    ):
+        secs = entry.get("secsInZone")
+        zones.append({
+            "zone": entry.get("zoneNumber"),
+            "low_boundary_bpm": entry.get("zoneLowBoundary"),
+            "time_in_zone": _seconds_to_hms(secs),
+        })
+    if not zones:
+        return {"activity_id": activity_id,
+                "error": "Keine Zonendaten für diese Aktivität erhalten."}
+    return {"activity_id": activity_id, "configured_zones": zones}
+
+
 # ---------------------------------------------------------------------------
 # MCP-Tools — Zusammenfassungen
 # ---------------------------------------------------------------------------

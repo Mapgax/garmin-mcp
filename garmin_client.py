@@ -295,3 +295,14 @@ class GarminClient:
 
     def get_heart_rates(self, date: str) -> Any:
         return self._call("get_heart_rates", date)
+
+    def get_lactate_threshold(self) -> Any:
+        # Ohne Argumente nutzt die Library latest=True — den jüngsten von der
+        # Uhr automatisch erkannten Laktatschwellen-Wert (HF + Pace).
+        return self._call("get_lactate_threshold")
+
+    def get_activity_hr_in_timezones(self, activity_id: str | int) -> Any:
+        # Zeit-in-Zonen einer Aktivität. Wichtig: Die Antwort enthält auch die
+        # aktuell im Garmin-Konto KONFIGURIERTEN Zonengrenzen (zoneLowBoundary)
+        # — der einzige Leseweg dafür; schreiben kann die API Zonen nicht.
+        return self._call("get_activity_hr_in_timezones", activity_id)
