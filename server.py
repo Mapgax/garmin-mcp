@@ -382,10 +382,14 @@ def get_training_status(date: str | None = None) -> dict:
 @mcp.tool()
 @safe_tool
 def get_vo2max(date: str | None = None) -> dict:
-    """VO2-Max-Schätzung (aerobe Fitness) für einen Tag.
+    """VO2-Max-Schätzung (aerobe Fitness) — letzter bekannter Wert ab einem Datum.
+
+    Garmin aktualisiert VO2max nur nach passenden Aktivitäten. Dieser Tool sucht
+    daher rückwärts bis zu 7 Tage und gibt den jüngsten vorhandenen Wert zurück
+    (plus das echte Datum, an dem er gemessen wurde). Worst case: 8 API-Calls.
 
     Args:
-        date: 'YYYY-MM-DD'. Standard: heute.
+        date: Startdatum der Rückwärtssuche als 'YYYY-MM-DD'. Standard: heute.
     """
     day = _normalize_date(date)
     # Garmin aktualisiert VO2max nur an Tagen mit passenden Aktivitäten; an

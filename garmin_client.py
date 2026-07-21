@@ -46,6 +46,14 @@ logger = logging.getLogger("garmin_mcp.client")
 # Library selbst).
 DEFAULT_TOKENSTORE = "~/.garminconnect"
 
+# Garmin's temporary IP ban message — used in two places, kept in one.
+_RATE_LIMIT_MSG = (
+    "Garmin hat die IP vorübergehend gesperrt (HTTP 429). "
+    "Bitte 30–60 Minuten warten und es erneut versuchen — "
+    "schnelle Wiederholungen verlängern die Sperre. Ein "
+    "Netzwechsel (z.B. Handy-Hotspot) gibt eine neue IP."
+)
+
 
 class GarminClientError(Exception):
     """Basisklasse für alle Fehler, die dieser Wrapper bewusst wirft."""
@@ -175,12 +183,7 @@ class GarminClient:
             except GarminConnectTooManyRequestsError as exc:
                 # 429: Garmin sperrt die IP kurzzeitig. Klarer Hinweis, dass
                 # Warten (nicht erneutes Probieren) die Lösung ist.
-                raise GarminRateLimited(
-                    "Garmin hat die IP vorübergehend gesperrt (HTTP 429). "
-                    "Bitte 30–60 Minuten warten und es erneut versuchen — "
-                    "schnelle Wiederholungen verlängern die Sperre. Ein "
-                    "Netzwechsel (z.B. Handy-Hotspot) gibt eine neue IP."
-                ) from exc
+                raise GarminRateLimited(_RATE_LIMIT_MSG) from exc
             except GarminConnectAuthenticationError as exc:
                 # Häufigster Fall: keine/abgelaufene Tokens UND fehlende oder
                 # falsche Credentials. Wir übersetzen das in eine klare,
@@ -230,12 +233,7 @@ class GarminClient:
             except GarminConnectTooManyRequestsError as exc:
                 # 429 mitten im Betrieb: gleiche klare Botschaft wie beim Login.
                 # Kein Retry — das würde die Sperre nur verlängern.
-                raise GarminRateLimited(
-                    "Garmin hat die IP vorübergehend gesperrt (HTTP 429). "
-                    "Bitte 30–60 Minuten warten und es erneut versuchen — "
-                    "schnelle Wiederholungen verlängern die Sperre. Ein "
-                    "Netzwechsel (z.B. Handy-Hotspot) gibt eine neue IP."
-                ) from exc
+                raise GarminRateLimited(_RATE_LIMIT_MSG) from exc
             except self._RETRYABLE as exc:
                 last_exc = exc
                 if attempt == self._max_retries:
@@ -294,9 +292,6 @@ class GarminClient:
 
     def get_user_summary(self, date: str) -> Any:
         return self._call("get_user_summary", date)
-
-    def get_steps_data(self, date: str) -> Any:
-        return self._call("get_steps_data", date)
 
     def get_heart_rates(self, date: str) -> Any:
         return self._call("get_heart_rates", date)
