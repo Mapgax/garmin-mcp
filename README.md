@@ -29,7 +29,7 @@ Tagesübersichten, aktueller Puls).
 
 ### 1. Abhängigkeiten installieren
 ```bash
-cd ~/Documents/Projects/Personal/garmin_mcp
+cd ~/Projects/Personal/garmin_mcp
 pip3 install -r requirements.txt --break-system-packages
 ```
 
@@ -54,7 +54,7 @@ In `~/Library/Application Support/Claude/claude_desktop_config.json` (im
   "mcpServers": {
     "garmin": {
       "command": "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
-      "args": ["/Users/andreas/Documents/Projects/Personal/garmin_mcp/server.py"]
+      "args": ["/Users/andreas/Projects/Personal/garmin_mcp/server.py"]
     }
   }
 }
