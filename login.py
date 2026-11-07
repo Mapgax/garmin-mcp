@@ -6,13 +6,14 @@ Wozu eine separate Datei?
     Skript ist die Stelle, an der du dich *einmal* im Terminal einloggst.
     Garmin liefert dabei OAuth-Tokens zurück, die lokal (Standard:
     ~/.garminconnect) gespeichert werden. Danach nutzt der Server nur noch
-    diese Tokens und erneuert sie automatisch — du musst dich erst wieder
-    einloggen, wenn die Tokens irgendwann ablaufen (typisch nach ~1 Jahr).
+    diese Tokens und erneuert sie automatisch. Neu einloggen musst du erst,
+    wenn Garmin den Refresh-Token verwirft — dann melden die Tools einen
+    Login-Fehler mit Hinweis auf dieses Skript.
 
 Aufruf:
     export GARMIN_EMAIL="deine@email.com"
     export GARMIN_PASSWORD="deinpasswort"
-    python3 login.py
+    .venv/bin/python login.py
 
 Falls 2FA aktiv ist, wirst du nach dem Code aus deiner Authenticator-App /
 SMS gefragt.
@@ -43,7 +44,7 @@ def _prompt_mfa() -> str:
         raise GarminAuthRequired(
             "Kein 2FA-Code eingegeben. Wenn dein Account kein 2FA hat, lag das "
             "vorherige Problem fast sicher an einem IP-Rate-Limit (429). Bitte "
-            "30–60 Minuten warten und 'python3 login.py' erneut ausführen; "
+            "30–60 Minuten warten und 'login.py' erneut ausführen; "
             "ein Netzwechsel (Handy-Hotspot) hilft oft sofort."
         )
     return code

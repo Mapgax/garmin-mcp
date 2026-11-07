@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import os
 import sys
 from datetime import date, datetime, timedelta
 from typing import Any, Callable
@@ -42,6 +43,14 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
 )
 logger = logging.getLogger("garmin_mcp.server")
+
+# Die Library meldet die eigentliche Ursache von Login-Problemen (z.B.
+# "DI token refresh failed: status=400") nur auf DEBUG-Level. Ohne das steht
+# im Log nur DASS der Login scheiterte, nicht WARUM. Ihre Debug-Meldungen sind
+# bereinigt (keine Tokens/Passwörter) — geprüft für garminconnect 0.3.20.
+# Abschaltbar mit GARMIN_MCP_LIB_DEBUG=0.
+if os.getenv("GARMIN_MCP_LIB_DEBUG", "1") != "0":
+    logging.getLogger("garminconnect").setLevel(logging.DEBUG)
 
 # Der MCP-Server. Der Name taucht u.a. in Claude Desktop auf.
 mcp = FastMCP("garmin")
@@ -172,6 +181,25 @@ def _format_activity(act: dict) -> dict:
         "elevation_gain_m": _round(act.get("elevationGain")),
         "calories": act.get("calories"),
     }
+
+
+# ---------------------------------------------------------------------------
+# MCP-Tools — Diagnose
+# ---------------------------------------------------------------------------
+@mcp.tool()
+@safe_tool
+def get_auth_status(verify: bool = False) -> dict:
+    """Zustand des Garmin-Logins: Token-Datei, Ablaufzeit, letzter Fehler.
+
+    Nutze dieses Tool, wenn andere Garmin-Tools Login-Fehler melden — es sagt,
+    ob die Tokens noch da sind, ob ein Login-Versuch gerade pausiert ist und
+    was die letzte Fehlerursache war. Gibt nie Token-Inhalte aus.
+
+    Args:
+        verify: True = zusätzlich echter Login-Check gegen Garmin (1–2 Calls).
+            Standard False (nur lokale Infos, kein Netzwerk).
+    """
+    return client.auth_status(verify=verify)
 
 
 # ---------------------------------------------------------------------------

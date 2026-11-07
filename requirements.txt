@@ -1,18 +1,16 @@
 # Garmin MCP — Python-Abhängigkeiten
 #
-# Installation (siehe README.md):
-#   pip3 install -r requirements.txt --break-system-packages
-#
-# Versionen sind nach unten gepinnt ("mindestens"), damit wir die APIs
-# bekommen, gegen die dieser Code geschrieben wurde, aber spätere
-# Bugfix-Releases noch erlaubt sind.
+# Installation in eine projekteigene virtuelle Umgebung (siehe README.md):
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
 
-# Inoffizielle Garmin-Connect-Client-Library. Macht den Login (inkl. 2FA)
-# und stellt ~130 Methoden für Aktivitäten, Schlaf, HRV, Stress etc. bereit.
-# Mindestens 0.3.2: erst ab dort gibt es get_lactate_threshold (für das
-# get_lactate_threshold-/get_hr_zones-Tool).
-garminconnect>=0.3.2
+# Inoffizielle Garmin-Connect-Client-Library (Login inkl. 2FA, ~130 Methoden).
+# EXAKT gepinnt: Garmin ändert den Login-Ablauf häufig, und die Library ändert
+# sich entsprechend oft — teils mit internen Umbauten (0.3.6 → 0.3.20 hat das
+# ganze Paket neu strukturiert). Ein unbemerktes Update soll den Login nicht
+# brechen. Upgrade bewusst: Version erhöhen, Tests laufen lassen, live prüfen.
+garminconnect==0.3.20
 
-# Offizielles Anthropic MCP-SDK. Wir nutzen daraus FastMCP
-# (mcp.server.fastmcp), das den JSON-RPC-/stdio-Boilerplate abnimmt.
-mcp>=1.15.0
+# Offizielles MCP-SDK. Wir nutzen daraus FastMCP (mcp.server.fastmcp).
+# <2: Version 2 ist ein Major-Release mit Breaking Changes.
+mcp>=1.15.0,<2
